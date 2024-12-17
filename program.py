@@ -401,6 +401,8 @@ class Game(pygame.sprite.Group):
         self.big_wave = False
         self.wave_length = 2000
         self.wave_start = pygame.time.get_ticks()
+        self.max_zombies = 10
+        self.current_wave = False
 
     def spawn_enemy(self):
         # Spawn a zombie at a random position on the map
@@ -423,30 +425,30 @@ class Game(pygame.sprite.Group):
             self.last_box_spawn = current_time
 
         # check if its time to spawn a zombie
-        if current_time - self.last_zombie_spawn >= self.zombie_spawn_cooldown and len(self.enemy_group) < 10:
+        if current_time - self.last_zombie_spawn >= self.zombie_spawn_cooldown and len(self.enemy_group) < self.max_zombies:
             self.spawn_enemy()
             self.last_zombie_spawn = current_time
 
         # Secret Big Wave
         if self.big_wave:
-            for _ in range(10):
+            for _ in range(5):
                 self.spawn_enemy()
             self.big_wave = False
-            self.wave_start = pygame.time.get_ticks()
+            self.wave_start = current_time
+            self.current_wave = True
+            # Increase zombie count and spawn rate during the wave
+            self.zombie_spawn_cooldown = 100
+            self.max_zombies = 40
 
-        if current_time - self.wave_start >= self.wave_length:
-            self.zombie_spawn_cooldown = ENEMY_SPAWN
-        else:
-            self.zombie_spawn_cooldown = 20
+        # Spawning surge for big wave
+        if self.current_wave:
+            if current_time - self.wave_start >= self.wave_length:
+                # End of wave, reset values
+                self.zombie_spawn_cooldown = ENEMY_SPAWN
+                self.max_zombies = 10
+                self.current_wave = False
 
-        
-
-        # if len(self.enemy_group) < 3:
-        #     self.spawn_enemy()
-        
-        # if len(self.obstacles_group) < 2:
-        #     self.spawn_object()
-
+        # Update all sprites
         self.all_sprites_group.update()
 
 
@@ -462,15 +464,10 @@ class Game(pygame.sprite.Group):
             offset_pos = sprite.rect.topleft - self.offset
             screen.blit(sprite.image, offset_pos)
 
-        
-
-# Sprite groupings
-
-# Initilaize Player, Camara, an enemy, and a box
+# Initilaize Player and Game
 newGame = Game()
 player = Player()
-zombie = Enemy((2400, 1400))
-box = Objects((2500, 1000))
+
 
 while True:
     keys = pygame.key.get_pressed()
@@ -482,38 +479,9 @@ while True:
     # Update game each tick
     screen.blit(plain_background, (0, 0))
 
+    # Use game class to update and draw game
     newGame.custom_draw()
     newGame.update()
-
-    # num_enemies = len(enemy_group)
-    # if num_enemies < 5:
-    #     enemy_group.add(Enemy((random.randint(928, 2910), random.randint(323, 1987))))
-    # if num_enemies < 20 and zombie_spawn_countdown <= 0:
-    #     zombie_spawn_countdown = ENEMY_SPAWN
-    #     enemy_group.add(Enemy((random.randint(928, 2910), random.randint(323, 1987))))
-    
-
-    # num_boxes = len(obstacles_group)
-    # if num_boxes < 3:
-    #     obstacles_group.add(Objects((random.randint(928, 2910), random.randint(323, 1987))))
-    # if num_boxes < 12 and box_spawn_countdown <= 0:
-    #     box_spawn_countdown = BOX_SPAWN
-    #     obstacles_group.add(Objects((random.randint(928, 2910), random.randint(323, 1987))))
-
-    # if zombie_spawn_countdown > 0:
-    #     zombie_spawn_countdown -= 1
-    # if box_spawn_countdown > 0:
-    #     box_spawn_countdown -= 1
-
-    # # Show hitboxes for player
-    # pygame.draw.rect(screen, "red", player.hitbox_rect, width=2)
-    # pygame.draw.rect(screen, "yellow", player.rect, width=2)
-
-    # # Show hitboxes for enemies
-    # for enemy in enemy_group:
-    #     pygame.draw.rect(screen, "red", enemy.hitbox_rect, width=2)
-    #     pygame.draw.rect(screen, "yellow", enemy.rect, width=2)
-
 
     pygame.display.update()
     clock.tick(FPS)
